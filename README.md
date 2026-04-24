@@ -1,6 +1,6 @@
 # QQ 群 Generic Agent 机器人
 
-面向中文社区的默认说明。英文版见：[README.en.md](README.en.md)。
+English：[README.en.md](README.en.md)。
 
 这是一个从当前实验版里抽出来的干净项目骨架，用来整理 QQ 小号、QCE/NapCat、OneBot、WSL、GenericAgent、图片识别和群记忆之间的关系。
 
