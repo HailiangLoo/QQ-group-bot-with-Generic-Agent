@@ -1,0 +1,45 @@
+[onebot]
+ws_url = "ws://127.0.0.1:3001"
+access_token = ""
+allowed_groups = ["*"]
+trigger_words = ["杰出"]
+
+[memory]
+db_path = "data/live_memory.db"
+media_dir = "data/media"
+context_messages = 80
+context_image_caption_clip = 520
+
+[models.text]
+name = "deepseek-v4-flash"
+api_base = "https://api.deepseek.com"
+api_key_env = "TEXT_MODEL_API_KEY"
+model = "deepseek-v4-flash"
+max_tokens = 4096
+reasoning_effort = "high"
+
+[models.vision]
+name = "qwen-vision-flash"
+api_base = "https://openrouter.ai/api/v1"
+api_key_env = "VISION_MODEL_API_KEY"
+model = "qwen/qwen3.5-flash-02-23"
+max_tokens = 10000
+
+[trigger]
+followup_messages = 6
+followup_ttl_seconds = 600
+followup_context_messages = 8
+followup_reply_threshold = 0.72
+followup_wait_threshold = 0.45
+followup_wait_seconds = 6
+followup_min_reply_cooldown = 12
+
+auto_reply_min_interval = 300
+auto_reply_chance = 0.25
+auto_reply_max_per_hour = 10
+idle_new_topic_gap_seconds = 900
+idle_new_topic_wait_seconds = 120
+long_text_chars = 300
+long_text_wait_seconds = 45
+keywords = ["绷不住", "闹麻了", "逆天", "无敌", "笑死", "上号", "抽象"]
+

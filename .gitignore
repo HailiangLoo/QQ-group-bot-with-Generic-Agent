@@ -1,0 +1,17 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+*.log
+*.sqlite
+*.db
+*.db-shm
+*.db-wal
+data/
+private/
+private_memory/
+media/
+temp/
+.pytest_cache/
+.mypy_cache/
+

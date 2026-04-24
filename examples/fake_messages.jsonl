@@ -1,0 +1,4 @@
+{"time":"2026-01-01 10:00:00","chat_id":"group:demo","sender":"Alice","user_id":"u1","content":"杰出 你能看见上下文吗","images":[]}
+{"time":"2026-01-01 10:00:05","chat_id":"group:demo","sender":"杰出","user_id":"bot","content":"看见了，别考我视力了。","images":[]}
+{"time":"2026-01-01 10:00:13","chat_id":"group:demo","sender":"Bob","user_id":"u2","content":"你刚才这句有点像人了","images":[]}
+
