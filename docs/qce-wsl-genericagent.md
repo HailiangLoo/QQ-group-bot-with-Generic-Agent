@@ -8,18 +8,36 @@ Windows
   QCE / NapCat
   OneBot WebSocket server
 
-WSL or Windows
+Windows, WSL, or Linux
   group-memory-agent gateway
 
-WSL
+Windows, WSL, or Linux
   GenericAgent
   memory/index
   group_memory/live
 ```
 
+## Platform Choice
+
+WSL is not required. The gateway is normal Python code and can run directly on Windows, in WSL, or on a Linux host.
+
+The WSL layout is useful when your GenericAgent workspace, memory index, shell scripts, and long-running logs already live in Linux. It is not a hard dependency of the project.
+
+Pure Windows is often the easiest setup:
+
+```text
+Windows QQ
+  -> QCE/NapCat
+  -> ws://127.0.0.1:3001
+  -> Windows Python gateway
+  -> GenericAgent or another LLM runner
+```
+
+In this layout, `127.0.0.1` usually works because QQ, QCE/NapCat, and the gateway are all on the same Windows network namespace.
+
 ## Recommended Layout
 
-For the lowest-friction setup, keep QQ and QCE/NapCat on Windows, because the graphical QQ client already runs there. Run the gateway either on Windows or in WSL.
+For the lowest-friction setup, keep QQ and QCE/NapCat on Windows, because the graphical QQ client already runs there. Run the gateway either on Windows, in WSL, or on Linux.
 
 If the gateway runs in WSL, `127.0.0.1` inside WSL may refer to WSL itself, not Windows. Use one of these:
 
@@ -81,4 +99,3 @@ The gateway's `AgentRunner` interface is deliberately small so you can plug in:
 - Gateway: routing, memory, context building, image cache.
 - GenericAgent: final thinking and persona reply.
 - Deep profile distillation: offline or scheduled learning, not required for every message.
-

@@ -73,6 +73,27 @@ You need:
 
 This skeleton defaults to a stub runner, so it can start without real model keys. To make it useful in a real group, wire `AgentRunner.reply()` to GenericAgent or your own LLM backend.
 
+## Platform Notes
+
+WSL is not required. The gateway is normal Python code and can run on pure Windows, WSL, or Linux.
+
+The current experimental setup used WSL mostly because GenericAgent, memory files, shell scripts, SQLite logs, and long-running background tasks already lived there. That is a deployment choice, not a code requirement.
+
+For many users, pure Windows is the simplest layout:
+
+```text
+Windows
+  QQ small account
+  QCE / NapCat
+  Python gateway
+  GenericAgent or LLM runner
+  live_memory.db
+```
+
+In pure Windows mode, `onebot.ws_url = "ws://127.0.0.1:3001"` usually works directly because QQ, QCE/NapCat, and the gateway share the same Windows localhost.
+
+If the gateway runs in WSL while QCE/NapCat runs on Windows, `127.0.0.1` inside WSL may point to WSL itself. Use the Windows host IP, expose QCE/NapCat on a reachable interface, or run the gateway on Windows.
+
 ## Installation
 
 ```bash

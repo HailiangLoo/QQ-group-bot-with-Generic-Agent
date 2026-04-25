@@ -93,6 +93,45 @@ OneBot 再把回复发回群里
 
 Deep profiles 和 episodes 应该定期更新，不要和实时回复阻塞在一起。
 
+## 运行平台说明
+
+这个项目不要求 WSL。纯 Windows、WSL、普通 Linux 都可以跑，代码层面没有必须绑定 WSL 的地方。
+
+我当前实验环境使用 WSL，主要是因为：
+
+- GenericAgent 和历史记忆目录本来就在 WSL 里；
+- Linux 下跑长期后台脚本、SQLite、日志和 shell 工具比较顺手；
+- Windows QQ / QCE/NapCat 和 WSL gateway 可以分开，方便调试；
+- 不想把私有实验环境的路径和脚本混进这个开源骨架。
+
+如果你是普通用户，最简单的部署其实可以是纯 Windows：
+
+```text
+Windows
+  QQ 小号
+  QCE / NapCat
+  Python gateway
+  GenericAgent 或 LLM runner
+  live_memory.db
+```
+
+纯 Windows 时，`onebot.ws_url = "ws://127.0.0.1:3001"` 通常就能直连 QCE/NapCat，不需要处理 WSL 到 Windows localhost 的映射问题。
+
+WSL 只是另一种部署方式：
+
+```text
+Windows
+  QQ 小号
+  QCE / NapCat
+
+WSL/Linux
+  Python gateway
+  GenericAgent
+  group_memory/live
+```
+
+这种方式要注意：WSL 里的 `127.0.0.1` 是 WSL 自己，不一定是 Windows。连不上 OneBot 时，要么改成 Windows host IP，要么直接把 gateway 放在 Windows 跑。
+
 ## 启动关系
 
 推荐顺序：
