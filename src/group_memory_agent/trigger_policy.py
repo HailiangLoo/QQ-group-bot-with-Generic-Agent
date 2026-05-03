@@ -99,7 +99,7 @@ class TriggerPolicy:
         if now - last < self.trigger.auto_reply_min_interval:
             return False
         hour_key = (message.group_id, int(now // 3600))
-        if self.hourly_counts.get(hour_key, 0) >= self.trigger.auto_reply_max_per_hour:
+        if self.trigger.auto_reply_max_per_hour > 0 and self.hourly_counts.get(hour_key, 0) >= self.trigger.auto_reply_max_per_hour:
             return False
         if random.random() > self.trigger.auto_reply_chance:
             return False

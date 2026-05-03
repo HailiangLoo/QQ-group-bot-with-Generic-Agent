@@ -40,8 +40,8 @@ followup_wait_seconds = 6
 followup_min_reply_cooldown = 12
 
 auto_reply_min_interval = 300
-auto_reply_chance = 0.25
-auto_reply_max_per_hour = 10
+auto_reply_chance = 0.05
+auto_reply_max_per_hour = 0 # 0 means no hourly hard cap
 idle_new_topic_gap_seconds = 900
 idle_new_topic_wait_seconds = 120
 idle_reply_min_chars = 1

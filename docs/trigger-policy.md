@@ -67,8 +67,8 @@ For low-stakes group presence, the persona can occasionally echo a meme or throw
 Default:
 
 - minimum interval: 5 minutes;
-- random chance: 25%;
-- maximum: 10 per hour;
+- random chance: 5%;
+- maximum: no hard cap by default (`auto_reply_max_per_hour = 0`);
 - style: one short meme echo, no essay, no lecture.
 
 This route should arm follow-up listening after it speaks.

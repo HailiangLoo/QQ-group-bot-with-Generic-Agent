@@ -55,8 +55,8 @@ class TriggerConfig:
     followup_min_reply_cooldown: int = 12
 
     auto_reply_min_interval: int = 300
-    auto_reply_chance: float = 0.25
-    auto_reply_max_per_hour: int = 10
+    auto_reply_chance: float = 0.05
+    auto_reply_max_per_hour: int = 0
     idle_new_topic_gap_seconds: int = 900
     idle_new_topic_wait_seconds: int = 120
     long_text_chars: int = 300
@@ -130,8 +130,8 @@ def load_config(path: str | Path) -> AppConfig:
         followup_wait_seconds=int(trigger_raw.get("followup_wait_seconds", 6)),
         followup_min_reply_cooldown=int(trigger_raw.get("followup_min_reply_cooldown", 12)),
         auto_reply_min_interval=int(trigger_raw.get("auto_reply_min_interval", 300)),
-        auto_reply_chance=float(trigger_raw.get("auto_reply_chance", 0.25)),
-        auto_reply_max_per_hour=int(trigger_raw.get("auto_reply_max_per_hour", 10)),
+        auto_reply_chance=float(trigger_raw.get("auto_reply_chance", 0.05)),
+        auto_reply_max_per_hour=int(trigger_raw.get("auto_reply_max_per_hour", 0)),
         idle_new_topic_gap_seconds=int(trigger_raw.get("idle_new_topic_gap_seconds", 900)),
         idle_new_topic_wait_seconds=int(trigger_raw.get("idle_new_topic_wait_seconds", 120)),
         long_text_chars=int(trigger_raw.get("long_text_chars", 300)),
