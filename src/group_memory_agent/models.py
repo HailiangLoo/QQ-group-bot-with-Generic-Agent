@@ -14,6 +14,7 @@ class ImageAttachment:
     local_path: str = ""
     sha256: str = ""
     caption: str = ""
+    source_segment_type: str = "image"
 
 
 @dataclass(slots=True)
@@ -24,6 +25,8 @@ class IncomingMessage:
     nickname: str
     text: str
     message_id: str = ""
+    reply_to_message_id: str = ""
+    quote_text: str = ""
     timestamp: float = field(default_factory=time.time)
     images: list[ImageAttachment] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)
@@ -31,6 +34,8 @@ class IncomingMessage:
     @property
     def visible_text(self) -> str:
         parts = [self.text.strip()]
+        if self.quote_text:
+            parts.append(f"[引用原消息: {self.quote_text.strip()}]")
         for image in self.images:
             if image.caption:
                 parts.append(f"[图片: {image.caption.strip()}]")
@@ -48,6 +53,7 @@ class StoredMessage:
     role: str
     text: str
     created_at: float
+    message_id: str = ""
 
 
 @dataclass(slots=True)
@@ -56,6 +62,7 @@ class TriggerDecision:
     reason: str
     confidence: float = 1.0
     wait_seconds: float = 0.0
+    mode: str = "explicit"
 
 
 @dataclass(slots=True)
@@ -65,4 +72,3 @@ class ReplyRequest:
     recent_messages: list[StoredMessage]
     trigger: TriggerDecision
     memory_snippets: list[str] = field(default_factory=list)
-

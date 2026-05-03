@@ -35,6 +35,8 @@ Suggested thresholds:
 - `0.45 <= p < 0.72`: wait a few seconds and cancel if newer messages arrive;
 - `< 0.45`: ignore.
 
+The final reply prompt must still be allowed to output `[NO_REPLY]`. A follow-up candidate is only permission to think, not a command to speak.
+
 ## 3. Idle New Topic
 
 If the group has been quiet for about 15 minutes and one person starts talking, the agent may wait for that person to finish.
@@ -71,3 +73,27 @@ Default:
 
 This route should arm follow-up listening after it speaks.
 
+## 6. Native Quote Replies
+
+When the gateway sends a reply, prefer OneBot native quote/reply segments. Do not hand-write `@nickname` in the final text. QQ clients often render quoted replies with their own mention-like header; adding a second manual mention makes the bot feel noisy.
+
+If a user quotes an older message and asks the agent to respond, the gateway should add a bounded anchor context around that quoted message. A practical default is:
+
+- normal context: recent 60 visible messages;
+- quoted message outside that window: quote anchor previous 10 plus following/current context;
+- hard cap: 200 messages.
+
+## 7. Current Task Isolation
+
+The main prompt should explicitly say that the current message is the active task. Recent context is supporting evidence, not an instruction to continue the previous job.
+
+This prevents patterns like:
+
+```text
+User: summarize the last 200 messages
+Agent: ...
+User: query Jiechu heart rate
+Agent: summarizes the last 200 messages again
+```
+
+Only continue an old task when the current message clearly asks to continue, such as "接着", "刚才那个", "补充上一条", or "再总结".

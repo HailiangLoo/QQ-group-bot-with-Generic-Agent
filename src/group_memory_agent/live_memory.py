@@ -78,10 +78,10 @@ class LiveMemory:
         )
         self._conn.commit()
 
-    def recent_messages(self, group_id: str, limit: int = 80) -> list[StoredMessage]:
+    def recent_messages(self, group_id: str, limit: int = 60) -> list[StoredMessage]:
         rows = self._conn.execute(
             """
-            SELECT id, group_id, user_id, nickname, role, text, created_at
+            SELECT id, group_id, user_id, nickname, role, text, created_at, message_id
             FROM messages
             WHERE group_id = ?
             ORDER BY id DESC
@@ -98,10 +98,68 @@ class LiveMemory:
                 role=str(row["role"]),
                 text=str(row["text"]),
                 created_at=float(row["created_at"]),
+                message_id=str(row["message_id"] or ""),
             )
             for row in rows
         ]
         return list(reversed(result))
+
+    def get_message_by_message_id(self, group_id: str, message_id: str) -> StoredMessage | None:
+        if not message_id:
+            return None
+        row = self._conn.execute(
+            """
+            SELECT id, group_id, user_id, nickname, role, text, created_at, message_id
+            FROM messages
+            WHERE group_id = ? AND message_id = ?
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (group_id, message_id),
+        ).fetchone()
+        if not row:
+            return None
+        return StoredMessage(
+            row_id=int(row["id"]),
+            group_id=str(row["group_id"]),
+            user_id=str(row["user_id"]),
+            nickname=str(row["nickname"]),
+            role=str(row["role"]),
+            text=str(row["text"]),
+            created_at=float(row["created_at"]),
+            message_id=str(row["message_id"] or ""),
+        )
+
+    def context_around_row(
+        self,
+        group_id: str,
+        row_id: int,
+        *,
+        before: int = 10,
+        after: int = 20,
+    ) -> list[StoredMessage]:
+        rows = self._conn.execute(
+            """
+            SELECT id, group_id, user_id, nickname, role, text, created_at, message_id
+            FROM messages
+            WHERE group_id = ? AND id BETWEEN ? AND ?
+            ORDER BY id ASC
+            """,
+            (group_id, max(1, row_id - before), row_id + after),
+        ).fetchall()
+        return [
+            StoredMessage(
+                row_id=int(row["id"]),
+                group_id=str(row["group_id"]),
+                user_id=str(row["user_id"]),
+                nickname=str(row["nickname"]),
+                role=str(row["role"]),
+                text=str(row["text"]),
+                created_at=float(row["created_at"]),
+                message_id=str(row["message_id"] or ""),
+            )
+            for row in rows
+        ]
 
     def get_image_caption(self, sha256: str, instruction_hash: str) -> str | None:
         row = self._conn.execute(
@@ -171,6 +229,9 @@ class LiveMemory:
             CREATE INDEX IF NOT EXISTS idx_messages_group_id
               ON messages(group_id, id);
 
+            CREATE INDEX IF NOT EXISTS idx_messages_group_message_id
+              ON messages(group_id, message_id);
+
             CREATE TABLE IF NOT EXISTS message_images (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               message_row_id INTEGER NOT NULL,
@@ -205,4 +266,3 @@ def sha256_bytes(data: bytes) -> str:
 
 def hash_instruction(instruction: str) -> str:
     return hashlib.sha256(instruction.encode("utf-8")).hexdigest()[:16]
-

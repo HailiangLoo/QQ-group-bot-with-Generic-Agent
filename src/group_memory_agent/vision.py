@@ -50,10 +50,22 @@ def caption_image_bytes(
     response.raise_for_status()
     data = response.json()
     text = data["choices"][0]["message"].get("content", "")
-    return text.strip(), data.get("usage", {})
+    return sanitize_caption(text), data.get("usage", {})
+
+
+def sanitize_caption(text: str, *, max_chars: int = 20000) -> str:
+    """Drop pathological multimodal outputs before they enter chat context."""
+    cleaned = (text or "").strip()
+    if len(cleaned) > max_chars:
+        return "[vision_warning] 图片描述过长，已丢弃。请用更窄的问题重新看图。"
+    compact = "".join(cleaned.split())
+    if compact:
+        unit = compact[: max(20, min(200, len(compact) // 8))]
+        if unit and compact.count(unit) >= 8:
+            return "[vision_warning] 图片描述疑似重复循环，已丢弃。请用更窄的问题重新看图。"
+    return cleaned
 
 
 def guess_mime(path: str, default: str = "image/png") -> str:
     guessed, _ = mimetypes.guess_type(path)
     return guessed or default
-

@@ -15,14 +15,17 @@ class OneBotConfig:
     access_token: str = ""
     allowed_groups: list[str] = field(default_factory=lambda: ["*"])
     trigger_words: list[str] = field(default_factory=lambda: ["杰出"])
+    reply_with_quote: bool = True
 
 
 @dataclass(slots=True)
 class MemoryConfig:
     db_path: Path = Path("data/live_memory.db")
     media_dir: Path = Path("data/media")
-    context_messages: int = 80
+    context_messages: int = 60
     context_image_caption_clip: int = 520
+    store_raw_events: bool = False
+    self_improvement_queue_path: Path = Path("data/self_improvement_queue.jsonl")
 
 
 @dataclass(slots=True)
@@ -32,6 +35,8 @@ class ModelConfig:
     api_key_env: str
     model: str
     max_tokens: int = 4096
+    temperature: float | None = None
+    top_p: float | None = None
     reasoning_effort: str | None = None
 
     @property
@@ -56,6 +61,7 @@ class TriggerConfig:
     idle_new_topic_wait_seconds: int = 120
     long_text_chars: int = 300
     long_text_wait_seconds: int = 45
+    idle_reply_min_chars: int = 1
     keywords: list[str] = field(default_factory=list)
 
 
@@ -85,13 +91,19 @@ def load_config(path: str | Path) -> AppConfig:
         access_token=str(onebot_raw.get("access_token", "")),
         allowed_groups=_string_list(onebot_raw.get("allowed_groups", ["*"])),
         trigger_words=_string_list(onebot_raw.get("trigger_words", ["杰出"])),
+        reply_with_quote=bool(onebot_raw.get("reply_with_quote", True)),
     )
 
     memory = MemoryConfig(
         db_path=_resolve_path(memory_raw.get("db_path", "data/live_memory.db"), base_dir),
         media_dir=_resolve_path(memory_raw.get("media_dir", "data/media"), base_dir),
-        context_messages=int(memory_raw.get("context_messages", 80)),
+        context_messages=int(memory_raw.get("context_messages", 60)),
         context_image_caption_clip=int(memory_raw.get("context_image_caption_clip", 520)),
+        store_raw_events=bool(memory_raw.get("store_raw_events", False)),
+        self_improvement_queue_path=_resolve_path(
+            memory_raw.get("self_improvement_queue_path", "data/self_improvement_queue.jsonl"),
+            base_dir,
+        ),
     )
 
     text_model = _model_config(
@@ -124,6 +136,7 @@ def load_config(path: str | Path) -> AppConfig:
         idle_new_topic_wait_seconds=int(trigger_raw.get("idle_new_topic_wait_seconds", 120)),
         long_text_chars=int(trigger_raw.get("long_text_chars", 300)),
         long_text_wait_seconds=int(trigger_raw.get("long_text_wait_seconds", 45)),
+        idle_reply_min_chars=int(trigger_raw.get("idle_reply_min_chars", 1)),
         keywords=_string_list(trigger_raw.get("keywords", [])),
     )
 
@@ -146,12 +159,16 @@ def _model_config(
     fallback_model: str,
 ) -> ModelConfig:
     reasoning = raw.get("reasoning_effort")
+    temperature = raw.get("temperature")
+    top_p = raw.get("top_p")
     return ModelConfig(
         name=str(raw.get("name", fallback_name)),
         api_base=str(raw.get("api_base", fallback_base)).rstrip("/"),
         api_key_env=str(raw.get("api_key_env", fallback_env)),
         model=str(raw.get("model", fallback_model)),
         max_tokens=int(raw.get("max_tokens", 4096)),
+        temperature=float(temperature) if temperature is not None else None,
+        top_p=float(top_p) if top_p is not None else None,
         reasoning_effort=str(reasoning) if reasoning else None,
     )
 
@@ -169,4 +186,3 @@ def _string_list(value: Any) -> list[str]:
     if isinstance(value, str):
         return [value]
     return [str(item) for item in value]
-

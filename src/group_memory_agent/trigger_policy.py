@@ -28,18 +28,36 @@ class TriggerPolicy:
 
     def decide_basic(self, message: IncomingMessage, *, is_agent_message: bool = False) -> TriggerDecision:
         if is_agent_message:
-            return TriggerDecision(False, "ignore self", 0.0)
+            return TriggerDecision(False, "ignore self", 0.0, mode="ignore")
 
         if self.has_explicit_trigger(message.text):
-            return TriggerDecision(True, "explicit trigger word", 1.0)
+            return TriggerDecision(True, "explicit trigger word", 1.0, mode="explicit")
+
+        followup = self.consume_followup_slot(message.group_id)
+        if followup:
+            if self.can_reply_after_last_agent_message(message.group_id):
+                return TriggerDecision(
+                    True,
+                    "follow-up candidate after agent reply",
+                    0.55,
+                    self.trigger.followup_wait_seconds,
+                    mode="followup",
+                )
+            return TriggerDecision(False, "follow-up cooldown", 0.0, mode="followup")
 
         if len(message.text.strip()) >= self.trigger.long_text_chars:
-            return TriggerDecision(True, "long text summary candidate", 0.65, self.trigger.long_text_wait_seconds)
+            return TriggerDecision(
+                True,
+                "long text summary candidate",
+                0.65,
+                self.trigger.long_text_wait_seconds,
+                mode="auto_long_text",
+            )
 
         if self._keyword_banter_allowed(message):
-            return TriggerDecision(True, "light keyword/random banter", 0.35)
+            return TriggerDecision(True, "light keyword/random banter", 0.35, mode="auto_banter")
 
-        return TriggerDecision(False, "no trigger", 0.0)
+        return TriggerDecision(False, "no trigger", 0.0, mode="none")
 
     def has_explicit_trigger(self, text: str) -> bool:
         return any(word and word in text for word in self.onebot.trigger_words)
@@ -72,7 +90,7 @@ class TriggerPolicy:
 
     def _keyword_banter_allowed(self, message: IncomingMessage) -> bool:
         text = message.text.strip()
-        if not text:
+        if len(text) < self.trigger.idle_reply_min_chars:
             return False
         if self.trigger.keywords and not any(keyword in text for keyword in self.trigger.keywords):
             return False
@@ -88,4 +106,3 @@ class TriggerPolicy:
         self.last_auto_reply_at[message.group_id] = now
         self.hourly_counts[hour_key] = self.hourly_counts.get(hour_key, 0) + 1
         return True
-

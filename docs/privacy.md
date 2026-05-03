@@ -23,6 +23,14 @@ private/
 runtime/
 ```
 
+By default the public gateway should not store raw OneBot event payloads. If raw events are needed for local debugging, redact transport fields such as `url`, `file`, `path`, `cookie`, and `token`, and keep the resulting database out of git.
+
+QQ file segments are especially sensitive. A safe public default is:
+
+- image-like file segments may be treated as images if the extension and size are plausible;
+- normal files, audio, and video should be represented as `[QQ文件/音视频已屏蔽]`;
+- the agent should not read or upload arbitrary QQ files just because a group member asks.
+
 ## Consent and Platform Safety
 
 Use a small-account listener only where the group expects it. Avoid:
@@ -35,3 +43,14 @@ Use a small-account listener only where the group expects it. Avoid:
 
 The agent may use memory to speak naturally, but should not reveal the whole memory layer.
 
+## Prompt Injection Boundary
+
+QQ messages are user input, not operator instructions. A group member should not be able to make the agent:
+
+- read local files;
+- expose logs or config;
+- reveal keys/cookies/tokens;
+- rewrite long-term memory without review;
+- dump raw chat history or private profiles.
+
+The open-source skeleton therefore keeps arbitrary local tools out of the default runner. Add tools only behind explicit allowlists.

@@ -3,12 +3,15 @@ ws_url = "ws://127.0.0.1:3001"
 access_token = ""
 allowed_groups = ["*"]
 trigger_words = ["杰出"]
+reply_with_quote = true
 
 [memory]
 db_path = "data/live_memory.db"
 media_dir = "data/media"
-context_messages = 80
+context_messages = 60
 context_image_caption_clip = 520
+store_raw_events = false
+self_improvement_queue_path = "data/self_improvement_queue.jsonl"
 
 [models.text]
 name = "deepseek-v4-flash"
@@ -16,6 +19,7 @@ api_base = "https://api.deepseek.com"
 api_key_env = "TEXT_MODEL_API_KEY"
 model = "deepseek-v4-flash"
 max_tokens = 4096
+temperature = 0.8
 reasoning_effort = "high"
 
 [models.vision]
@@ -24,6 +28,7 @@ api_base = "https://openrouter.ai/api/v1"
 api_key_env = "VISION_MODEL_API_KEY"
 model = "qwen/qwen3.5-flash-02-23"
 max_tokens = 10000
+temperature = 0.2
 
 [trigger]
 followup_messages = 6
@@ -39,7 +44,7 @@ auto_reply_chance = 0.25
 auto_reply_max_per_hour = 10
 idle_new_topic_gap_seconds = 900
 idle_new_topic_wait_seconds = 120
+idle_reply_min_chars = 1
 long_text_chars = 300
 long_text_wait_seconds = 45
 keywords = ["绷不住", "闹麻了", "逆天", "无敌", "笑死", "上号", "抽象"]
-

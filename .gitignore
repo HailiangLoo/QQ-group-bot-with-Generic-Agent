@@ -1,4 +1,5 @@
 .env
+config.toml
 .venv/
 __pycache__/
 *.py[cod]
@@ -14,4 +15,3 @@ media/
 temp/
 .pytest_cache/
 .mypy_cache/
-

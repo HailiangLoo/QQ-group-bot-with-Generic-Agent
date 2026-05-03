@@ -8,12 +8,14 @@ Live memory stores the messages the small account can currently see.
 
 Use it for:
 
-- recent 50-100 messages;
+- recent 60 messages by default;
 - current reply context;
 - follow-up judgement;
 - incremental learning batches.
 
 Do not send the whole live database into every model call.
+
+If a message quotes an older message outside the normal window, add a bounded anchor window around the quoted message instead of expanding the entire database. This keeps quoted replies accurate without turning every reply into a long-history query.
 
 ## 2. Image Caption Cache
 
@@ -76,3 +78,30 @@ A practical schedule:
 
 The agent should learn from corrections with high priority. Corrections are often more valuable than ordinary chat.
 
+## Proposal-Only Self-Improvement Queue
+
+Runtime learning should be supervised. The bot can collect evidence, but it should not silently rewrite deep profiles or prompts from arbitrary QQ messages.
+
+Recommended queue file:
+
+```text
+data/self_improvement_queue.jsonl
+```
+
+Useful event types:
+
+- `correction`: a user says the bot got a fact, alias, or preference wrong;
+- `vision_failure`: image captioning missed important evidence or looped;
+- `search_failure`: search missed something that later proved available;
+- `duplicate_reply`: the bot answered the same completed task again;
+- `transport_error`: QQ/NapCat swallowed or timed out sending a reply;
+- `no_reply`: a candidate auto/follow-up reply was correctly suppressed.
+
+Daily or shutdown settlement can turn queue events into proposals:
+
+- new aliases or stable facts;
+- prompt preference patches;
+- threshold suggestions;
+- high-risk changes requiring human confirmation.
+
+The final write into long-term memory should be human-reviewed or at least auditable.

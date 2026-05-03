@@ -14,8 +14,11 @@ QCE / NapCat sidecar
 group-memory-agent
   |-- stores visible group messages
   |-- captions images once and caches the result
+  |-- treats QQ file segments that are actually images as images
+  |-- resolves quoted-message anchors when available
   |-- decides whether the persona should reply
   |-- builds a compact context pack
+  |-- records self-improvement events for later human review
   v
 GenericAgent / LLM runner
   |
@@ -43,8 +46,10 @@ It should not contain persona logic. Treat it as transport only.
 This gateway owns the reusable behavior:
 
 - parse OneBot events;
+- redact raw OneBot payloads unless explicitly enabled;
 - write live messages into SQLite;
 - dedupe and cache image captions;
+- keep quoted-message context reachable without exposing the whole database;
 - decide explicit, follow-up, idle, long-text, and light banter triggers;
 - build context packs;
 - call the final text/persona runner;
@@ -81,7 +86,19 @@ Then it produces the final group-style reply.
    - reuse a cached caption if available;
    - otherwise call the vision model once and store the caption.
 4. The gateway decides whether to reply.
-5. If replying, it builds a context pack and calls the main runner.
-6. The reply is sent through OneBot.
-7. Follow-up listening is armed for a short window after the persona speaks.
+5. If replying, it builds a context pack. If the current message quotes an older message outside the normal context window, a bounded anchor window is added.
+6. The main runner answers. If it outputs `[NO_REPLY]`, nothing is sent.
+7. The reply is sent through OneBot, preferably as a native quote instead of hand-written `@someone`.
+8. Errors, no-reply decisions, failed captions, duplicate replies, and other learnable failures can be appended to a proposal-only self-improvement queue.
+9. Follow-up listening is armed for a short window after the persona speaks.
 
+## Prompt Engineering First
+
+The runtime should not create a small classifier for every possible behavior. Prefer putting stable behavior policy in the main reply prompt when it can be expressed as normal conversation judgement:
+
+- current message has priority over previous completed tasks;
+- recommendations should be useful and structured instead of only a meme reply;
+- images are evidence from the vision module, not a reason for the main model to inspect files;
+- follow-up/auto routes may output `[NO_REPLY]` if the message is really for another person.
+
+Use extra model calls only when they materially reduce cost or prevent noisy replies, such as image captioning, follow-up probability sampling, or explicit tool gating.

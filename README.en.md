@@ -24,6 +24,8 @@ QCE / NapCat
 group-memory-agent gateway
   |-- live SQLite memory
   |-- image caption cache
+  |-- quoted-message anchor context
+  |-- proposal-only self-improvement queue
   |-- trigger policy
   |-- context pack builder
   v
@@ -39,9 +41,13 @@ OneBot send_group_msg
 - OneBot/QCE/NapCat integration boundary.
 - Live message storage in SQLite.
 - Image caption caching by image hash.
+- Native OneBot quote replies and bounded quoted-message context.
+- Safe handling for QQ file segments that are actually images, while blocking ordinary files/audio/video.
 - A stable final-speaker design:
   - vision model describes images;
   - main text model keeps the persona and writes the final group reply.
+- A current-task-first prompt to avoid repeating an already completed previous task.
+- A proposal-only self-improvement queue for corrections, failures, duplicate replies, and threshold tuning.
 - Trigger policy:
   - explicit trigger words;
   - follow-up listening after the agent speaks;
@@ -140,19 +146,24 @@ ws_url = "ws://127.0.0.1:3001"
 access_token = ""
 allowed_groups = ["*"]
 trigger_words = ["杰出"]
+reply_with_quote = true
 
 [memory]
 db_path = "data/live_memory.db"
 media_dir = "data/media"
-context_messages = 80
+context_messages = 60
+store_raw_events = false
+self_improvement_queue_path = "data/self_improvement_queue.jsonl"
 
 [models.text]
 api_key_env = "TEXT_MODEL_API_KEY"
 model = "deepseek-v4-flash"
+temperature = 0.8
 
 [models.vision]
 api_key_env = "VISION_MODEL_API_KEY"
 model = "qwen/qwen3.5-flash-02-23"
+temperature = 0.2
 ```
 
 Set environment variables if you wire real model calls:
@@ -198,7 +209,20 @@ python scripts/run_onebot_gateway.py --config config.toml
 
 The default runner is `StubAgentRunner`, which only echoes a short debug reply. It is useful for testing the OneBot connection and trigger policy.
 
-To use a real persona, implement or replace the runner in `src/group_memory_agent/runner.py`.
+For a minimal OpenAI-compatible text model test:
+
+```bash
+TEXT_MODEL_API_KEY=... python scripts/run_onebot_gateway.py --config config.toml --runner openai
+```
+
+PowerShell:
+
+```powershell
+$env:TEXT_MODEL_API_KEY="..."
+python scripts/run_onebot_gateway.py --config config.toml --runner openai
+```
+
+To use a full GenericAgent runtime, implement or replace the runner in `src/group_memory_agent/runner.py`, or wrap an external process with `CommandAgentRunner`.
 
 ## Test In A Group
 
@@ -278,13 +302,29 @@ episodes.jsonl
 
 Runtime replies should not load the entire historical corpus. Build a compact context pack:
 
-- recent visible messages;
+- recent visible messages, defaulting to a moderate window such as 60 messages;
 - current image captions;
 - relevant profile snippets;
 - relevant episodes;
 - current user preference/correction notes.
+- if the current message quotes an older message outside the recent window, a bounded quote-anchor window.
+
+Runtime learning should be supervised. Corrections, recognition failures, search failures, duplicate replies, and transport failures should first go into `self_improvement_queue.jsonl`. A stronger model or a human can periodically settle that queue into:
+
+- new aliases or stable facts;
+- prompt preference patches;
+- threshold suggestions;
+- high-risk changes that need manual confirmation.
+
+Do not let QQ group input directly rewrite long-term memory.
 
 See [Memory Design](docs/memory-design.md).
+
+## Core Design Principles
+
+- Prefer prompt engineering when it can solve behavior cleanly. For example, recommendation questions should be handled by the main reply prompt instead of a separate routing tool unless live search is genuinely needed.
+- Keep one stable final persona. Specialist models can describe images or retrieve facts, but the main speaker should write the final answer.
+- Keep autonomous learning auditable. The agent can propose memory/prompt changes, but durable changes should be reviewed before they are applied.
 
 ## Integrating GenericAgent
 

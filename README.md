@@ -48,7 +48,11 @@ OneBot 再把回复发回群里
 - OneBot / QCE / NapCat 的接入边界。
 - 群消息 live memory 的 SQLite 存储壳。
 - 图片 hash 去重和图片描述缓存。
+- QQ 原生引用回复和引用锚点上下文。
+- “QQ 文件其实是图片”时的安全识别，以及普通文件/音视频屏蔽。
 - “主模型稳定人格，视觉模型只做看图”的路由设计。
+- 当前任务优先的回复 prompt，避免把上一轮已完成任务又答一遍。
+- proposal-only 的自学习事件队列，方便人工结算别名、偏好、失败案例和阈值建议。
 - 触发策略：
   - 显式触发词；
   - bot 说话后的短窗口跟聊；
@@ -185,8 +189,11 @@ cp examples/config.example.toml config.toml
 - `onebot.trigger_words`：触发词，默认是 `杰出`。
 - `onebot.allowed_groups`：建议正式运行时改成具体群号。
 - `memory.db_path`：live memory SQLite 路径。
+- `memory.store_raw_events`：默认 `false`，不要把原始 OneBot payload 落库。
+- `memory.self_improvement_queue_path`：纠错、失败、重复回复等事件的待审队列。
 - `models.text`：最终人格回复模型。
 - `models.vision`：图片描述模型。
+- `models.*.temperature/top_p`：可选采样参数，不配置则交给模型服务默认值。
 
 ### 3. 准备 QCE / NapCat
 
@@ -209,7 +216,20 @@ python scripts/run_onebot_gateway.py --config config.toml
 
 当前干净骨架默认用 `StubAgentRunner`，只会回一条调试文本。它的作用是确认 OneBot 接通、消息能收到、触发词生效。
 
-要接入真实 GenericAgent，需要实现 `src/group_memory_agent/runner.py` 里的 `AgentRunner.reply()`。
+真实模型可以先用 OpenAI-compatible runner 测试：
+
+```bash
+TEXT_MODEL_API_KEY=... python scripts/run_onebot_gateway.py --config config.toml --runner openai
+```
+
+PowerShell：
+
+```powershell
+$env:TEXT_MODEL_API_KEY="..."
+python scripts/run_onebot_gateway.py --config config.toml --runner openai
+```
+
+要接入完整 GenericAgent，可以实现 `src/group_memory_agent/runner.py` 里的 `AgentRunner.reply()`，或者用 `CommandAgentRunner` 把上下文 JSON 交给外部进程。
 
 ### 5. 群里测试
 
@@ -226,6 +246,33 @@ python scripts/run_onebot_gateway.py --config config.toml
 ```
 
 然后再把 runner 换成真实 GenericAgent 或 OpenAI-compatible chat completion。
+
+## 核心设计原则
+
+### 1. Prompt engineering 优先
+
+能通过主回复 prompt 表达的行为，就不要额外做一个小判断器。比如：
+
+- 当前消息优先，不要续写上一轮已完成任务；
+- 推荐/规划问题要给开放、结构化、可执行的建议；
+- follow-up/auto 只是允许思考，不代表一定要发言；
+- 图片描述只是证据，不是最终回复。
+
+额外模型调用只用于确实能降本或防噪的地方：图片 caption、必要的跟聊概率判断、工具开放判断等。
+
+### 2. 主人格稳定
+
+图片模型、搜索模型、工具模型都不能直接决定最终口吻。最终发言统一交给主模型。
+
+### 3. 学习要有监管
+
+当前骨架提供 `SelfImprovementQueue`，默认写到：
+
+```text
+data/self_improvement_queue.jsonl
+```
+
+它只记录待审事件，不会直接改长期记忆。纠错、识图失败、搜索失败、重复回复、QQ 吞消息等都应该先进入队列，再由人工或强模型定期结算。
 
 ## 触发方式
 
@@ -285,14 +332,17 @@ episodes.jsonl
 
 每次回复时只组装一个 compact context pack：
 
-- 最近几十条可见上下文；
+- 最近 60 条可见上下文；
 - 当前消息和图片描述；
+- 如果当前消息引用了旧消息，则额外加入有上限的引用锚点上下文；
 - 被提到成员的相关短档案；
 - 相关 episodes；
 - 用户最近纠正过的偏好；
 - 当前触发原因。
 
 deep profiles 和 episodes 的更新应该走离线或低频后台任务，不要阻塞实时聊天回复。
+
+运行时学习走监管式流程：先把纠错、识图失败、搜索失败、重复回复、QQ 吞消息等写入 `self_improvement_queue.jsonl`，再由人工或强模型定期结算为长期记忆和 prompt 补丁。不要让 QQ 群输入直接改长期记忆。
 
 ## 接入真实 GenericAgent
 
